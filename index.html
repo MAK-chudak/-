@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Добрыня красаучик</title>
+
+  <style>
+    /* ---------- Цвета: меняйте их здесь ---------- */
+    :root {
+      --bg: #e9e7e2;        /* фон страницы */
+      --card: #f6f5f2;      /* фон карточек */
+      --text: #1d1f22;      /* основной текст */
+      --muted: #62666c;     /* второстепенный текст */
+      --line: #cfccc5;      /* линии и рамки */
+      --accent: #c8312b;    /* акцентный цвет (результат, выбранная кнопка) */
+      --steel: #8d9299;     /* цвет грифа */
+      color-scheme: light;
+    }
+
+    /* Тёмная тема включается автоматически, если она включена в телефоне */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #17181a;
+        --card: #222427;
+        --text: #ecebe7;
+        --muted: #9a9ea5;
+        --line: #383b40;
+        --accent: #e5473f;
+        --steel: #6f747b;
+        color-scheme: dark;
+      }
+    }
+
+    /* ---------- Общие стили ---------- */
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    main {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 12px 12px 32px;
+    }
+
+    h1 { font-size: 26px; line-height: 1.15; margin: 8px 0 4px; }
+    h2 { font-size: 19px; margin: 0 0 10px; }
+    .hint { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+    .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+
+    button { touch-action: manipulation; cursor: pointer; font-family: inherit; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    /* Карточка — блок с рамкой, в котором лежит каждая секция */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    /* ---------- Поля ввода ---------- */
+    .inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    label { display: block; white-space: nowrap; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+
+    /* Рамка вокруг поля ввода */
+    .stepper {
+      display: flex;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .stepper { height: 56px; }
+    .stepper:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .stepper input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font: 700 26px system-ui, sans-serif;
+      text-align: center;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    /* Убираем встроенные стрелочки браузера у числовых полей */
+    .stepper input::-webkit-outer-spin-button,
+    .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    .error { color: var(--accent); font-size: 14px; margin: 10px 0 0; min-height: 1.4em; }
+
+    /* ---------- Результат ---------- */
+    .result {
+      top: 8px;
+      z-index: 5;
+      text-align: center;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+    }
+    .result-number {
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .result-unit { font-size: 22px; color: var(--muted); margin-left: 6px; }
+    .result-range { color: var(--muted); font-size: 14px; }
+
+    /* ---------- Таблицы ---------- */
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { padding: 10px 4px; text-align: right; border-bottom: 1px solid var(--line); }
+    th:first-child, td:first-child { text-align: left; }
+    th { font-size: 13px; font-weight: 500; color: var(--muted); }
+    tr:last-child td { border-bottom: 0; }
+  </style>
+</head>
+
+<body>
+<main>
+
+<h1 style="text-align: center;">Мужской калькулятор</h1>
+
+  <!-- Блок 1: ввод данных -->
+  <section class="card">
+    <div class="inputs">
+      <div>
+        <label for="weight-input">Вес штанги, кг</label>
+        <div class="stepper">
+          <input id="weight-input" type="number" inputmode="decimal" min="0" step="any" value="80">
+        </div>
+      </div>
+      <div>
+        <label for="reps-input">Повторения</label>
+        <div class="stepper">
+          <input id="reps-input" type="number" inputmode="numeric" min="1" max="15" step="1" value="5">
+        </div>
+      </div>
+    </div>
+
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <!-- Блок 2: итоговый результат -->
+  <section class="card result" id="result-card" hidden>
+    <div class="result-number"><span id="result-number">0</span><span class="result-unit">кг</span></div>
+    <div class="result-range" id="result-range"></div>
+    <p class="note" id="result-note"></p>
+  </section>
+
+  <!-- Блок 3: рабочие веса в процентах -->
+  <section class="card" id="percent-card" hidden>
+    <h2>Рабочие веса от максимума</h2>
+    <table>
+      <thead><tr><th>% от 1ПМ</th><th>Вес</th><th>Повторений (≈)</th></tr></thead>
+      <tbody id="percent-table"></tbody>
+    </table>
+  </section>
+
+  <!-- Блок 4: результат по каждой формуле -->
+  <section class="card" id="formulas-card" hidden>
+    <h2>Результат по формулам</h2>
+    <table>
+      <thead><tr><th>Формула</th><th>1ПМ</th></tr></thead>
+      <tbody id="formulas-table"></tbody>
+    </table>
+      </section>
+
+</main>
+
+<script>
+/* =====================================================================
+   ДАННЫЕ И НАСТРОЙКИ
+   ===================================================================== */
+
+// Формулы. calc(вес, повторения) возвращает расчётный 1ПМ.
+const FORMULAS = [
+  { name: "Эпли",     calc: (w, r) => w * (1 + r / 30) },
+  { name: "Бжицки",   calc: (w, r) => w * 36 / (37 - r) },
+  { name: "Лэндер",   calc: (w, r) => 100 * w / (101.3 - 2.67123 * r) },
+  { name: "Ломбарди", calc: (w, r) => w * Math.pow(r, 0.10) },
+  { name: "О’Коннер", calc: (w, r) => w * (1 + r / 40) },
+  { name: "Мэйхью",   calc: (w, r) => 100 * w / (52.2 + 41.9 * Math.exp(-0.055 * r)) },
+];
+
+const MAX_REPS = 15;                      // больше повторений формулы считают плохо
+const PERCENTS = [100, 95, 90, 85, 80, 75, 70, 65, 60, 50];  // строки таблицы процентов
+
+
+/* =====================================================================
+   МЕЛКИЕ ПОМОЩНИКИ
+   ===================================================================== */
+
+// Короткая запись для поиска элемента на странице по id
+function byId(id) {
+  return document.getElementById(id);
+}
+
+// Форматирует число: один знак после запятой, запятая вместо точки (80.5 -> "80,5")
+function formatNumber(value) {
+  return String(Math.round(value * 10) / 10).replace(".", ",");
+}
+
+// Показывает или прячет все блоки с результатами сразу
+function setResultsVisible(isVisible) {
+  ["result-card", "percent-card", "formulas-card"].forEach(function (id) {
+    byId(id).hidden = !isVisible;
+  });
+}
+
+
+/* =====================================================================
+   РАСЧЁТЫ (здесь нет работы со страницей — только математика)
+   ===================================================================== */
+
+// Считает 1ПМ по каждой формуле. Возвращает массив чисел в порядке FORMULAS.
+// Если повторение одно, поднятый вес и есть максимум — формулы не нужны.
+function calculateAll(weight, reps) {
+  return FORMULAS.map(function (formula) {
+    return reps === 1 ? weight : formula.calc(weight, reps);
+  });
+}
+
+// Среднее арифметическое массива чисел — это и есть итоговый 1ПМ
+function average(numbers) {
+  const sum = numbers.reduce(function (total, n) { return total + n; }, 0);
+  return sum / numbers.length;
+}
+
+// Сколько повторений можно сделать с долей от максимума.
+// Это формула Бжицки, решённая наоборот: из процента получаем повторения.
+function repsAtPercent(percent) {
+  return Math.max(1, Math.round(37 - 36 * percent / 100));
+}
+
+
+/* =====================================================================
+   ОТРИСОВКА (берём готовые числа и выводим их на страницу)
+   ===================================================================== */
+
+// Выводит главный результат, диапазон формул и подсказку о точности
+function renderResult(oneRepMax, values, reps) {
+  const unitName = "кг";
+  byId("result-number").textContent = formatNumber(oneRepMax);
+
+  if (reps === 1) {
+    byId("result-range").textContent = "Вы уже подняли максимум.";
+  } else {
+    const low = Math.min.apply(null, values);
+    const high = Math.max.apply(null, values);
+    byId("result-range").textContent =
+      "Диапазон формул: " + formatNumber(low) + "–" + formatNumber(high) + " " + unitName;
+  }
+
+  let note = "";
+  if (reps > 10) {
+    note = "При " + reps + " повторениях оценка приблизительная: для точности возьмите подход до 10 повторений.";
+  } else if (reps >= 6) {
+    note = "Оценка надёжна, но ближе к 3–5 повторениям результат точнее.";
+  }
+  byId("result-note").textContent = note;
+}
+
+// Заполняет таблицу «процент от максимума → вес → примерное число повторений»
+function renderPercentTable(oneRepMax) {
+  const rows = PERCENTS.map(function (percent) {
+    const weight = formatNumber(oneRepMax * percent / 100);
+    const reps = percent === 100 ? 1 : repsAtPercent(percent);
+    return "<tr><td>" + percent + "%</td><td>" + weight + "</td><td>" + reps + "</td></tr>";
+  });
+  byId("percent-table").innerHTML = rows.join("");
+}
+
+// Заполняет таблицу «формула → результат»
+function renderFormulaTable(values) {
+  const rows = FORMULAS.map(function (formula, index) {
+    return "<tr><td>" + formula.name + "</td><td>" + formatNumber(values[index]) + "</td></tr>";
+  });
+  byId("formulas-table").innerHTML = rows.join("");
+}
+
+
+/* =====================================================================
+   ГЛАВНАЯ ФУНКЦИЯ: читает поля, считает, выводит результат
+   ===================================================================== */
+
+// Вызывается при каждом изменении веса, повторений или единиц
+function update() {
+  const weight = parseFloat(byId("weight-input").value);
+  const reps = parseInt(byId("reps-input").value, 10);
+
+  // Проверяем ввод и показываем понятное сообщение об ошибке
+  if (!(weight > 0)) {
+    byId("error").textContent = "Введите вес штанги больше нуля.";
+    setResultsVisible(false);
+    return;
+  }
+  if (!(reps >= 1) || reps > MAX_REPS) {
+    byId("error").textContent = "Число повторений должно быть от 1 до " + MAX_REPS + ".";
+    setResultsVisible(false);
+    return;
+  }
+  byId("error").textContent = "";
+
+  // Считаем
+  const values = calculateAll(weight, reps);
+  const oneRepMax = average(values);
+
+  // Выводим
+  renderResult(oneRepMax, values, reps);
+  renderPercentTable(oneRepMax);
+  renderFormulaTable(values);
+  setResultsVisible(true);
+}
+
+
+/* =====================================================================
+   ЗАПУСК
+   ===================================================================== */
+
+// Пересчёт на лету, пока человек печатает в полях
+byId("weight-input").addEventListener("input", update);
+byId("reps-input").addEventListener("input", update);
+
+// При касании поля выделяем число, чтобы новое сразу заменяло старое
+["weight-input", "reps-input"].forEach(function (id) {
+  byId(id).addEventListener("focus", function () {
+    const input = this;
+    setTimeout(function () { input.select(); }, 0);
+  });
+});
+
+// Первый расчёт при открытии страницы
+update();
+</script>
+</body>
+</html>
